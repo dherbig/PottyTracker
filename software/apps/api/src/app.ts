@@ -14,6 +14,7 @@ import {
   insertPottyEvent,
   listDogs,
   listEventsForDog,
+  listRecentEventsForDog,
 } from "./db/database.js";
 
 export interface AppOptions {
@@ -22,10 +23,26 @@ export interface AppOptions {
   staticRoot?: string;
 }
 
+function parseLimit(rawLimit: string | undefined, fallback = 20): number {
+  const parsed = Number(rawLimit ?? fallback);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return fallback;
+  }
+
+  return Math.min(Math.floor(parsed), 100);
+}
+
 export function createApp({ db, apiKey, staticRoot }: AppOptions): Hono {
   const app = new Hono();
 
+  app.get("/api/health", (c) => c.json({ status: "ok" as const }));
+
   app.use("/api/*", async (c, next) => {
+    if (c.req.path === "/api/health") {
+      await next();
+      return;
+    }
+
     const providedKey = c.req.header("X-API-Key");
     if (!providedKey || providedKey !== apiKey) {
       throw new HTTPException(401, { message: "Unauthorized" });
@@ -51,6 +68,16 @@ export function createApp({ db, apiKey, staticRoot }: AppOptions): Hono {
     }
     const events = listEventsForDog(db, dogId);
     return c.json(computePottyState(dogId, events));
+  });
+
+  app.get("/api/dogs/:dogId/events", (c) => {
+    const dogId = c.req.param("dogId");
+    if (!dogExists(db, dogId)) {
+      throw new HTTPException(404, { message: "Dog not found" });
+    }
+
+    const limit = parseLimit(c.req.query("limit"));
+    return c.json(listRecentEventsForDog(db, dogId, limit));
   });
 
   app.post("/api/dogs/:dogId/events", async (c) => {

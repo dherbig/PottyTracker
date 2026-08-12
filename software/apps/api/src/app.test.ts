@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it, beforeEach } from "vitest";
 import { createApp } from "./app.js";
 import { createDatabase } from "./db/database.js";
@@ -187,5 +190,119 @@ describe("Potty Tracker API", () => {
       body: JSON.stringify({}),
     });
     expect(response.status).toBe(400);
+  });
+
+  it("returns health without authentication", async () => {
+    const response = await app.request("/api/health");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "ok" });
+  });
+
+  it("returns recent events newest-first", async () => {
+    const dogs = await (
+      await app.request("/api/dogs", { headers: authHeaders() })
+    ).json();
+    const dogId = dogs[0].id;
+
+    await app.request(`/api/dogs/${dogId}/events`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hadPoop: false,
+        timestamp: "2026-08-12T08:00:00Z",
+      }),
+    });
+
+    await app.request(`/api/dogs/${dogId}/events`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hadPoop: true,
+        timestamp: "2026-08-12T10:00:00Z",
+      }),
+    });
+
+    const response = await app.request(
+      `/api/dogs/${dogId}/events?limit=10`,
+      { headers: authHeaders() },
+    );
+
+    expect(response.status).toBe(200);
+    const events = await response.json();
+    expect(events).toHaveLength(2);
+    expect(events[0].timestamp).toBe("2026-08-12T10:00:00Z");
+    expect(events[1].timestamp).toBe("2026-08-12T08:00:00Z");
+  });
+
+  it("returns 404 when listing events for unknown dog", async () => {
+    const response = await app.request("/api/dogs/missing-dog/events", {
+      headers: authHeaders(),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 when clearing unknown dog", async () => {
+    const response = await app.request("/api/dogs/missing-dog/clear", {
+      method: "POST",
+      headers: authHeaders(),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it("respects limit query and caps at 100", async () => {
+    const dogs = await (
+      await app.request("/api/dogs", { headers: authHeaders() })
+    ).json();
+    const dogId = dogs[0].id;
+
+    for (let index = 0; index < 3; index += 1) {
+      await app.request(`/api/dogs/${dogId}/events`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ hadPoop: false }),
+      });
+    }
+
+    const capped = await app.request(
+      `/api/dogs/${dogId}/events?limit=500`,
+      { headers: authHeaders() },
+    );
+    expect((await capped.json()).length).toBeLessThanOrEqual(100);
+
+    const limited = await app.request(
+      `/api/dogs/${dogId}/events?limit=2`,
+      { headers: authHeaders() },
+    );
+    expect((await limited.json())).toHaveLength(2);
+
+    const fallback = await app.request(
+      `/api/dogs/${dogId}/events?limit=0`,
+      { headers: authHeaders() },
+    );
+    expect((await fallback.json()).length).toBeGreaterThan(2);
+  });
+
+  it("returns 500 for unexpected errors", async () => {
+    const response = await app.request("/api/dogs", {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: "not-json",
+    });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Internal Server Error" });
+  });
+});
+
+describe("Potty Tracker API static files", () => {
+  it("serves the PWA shell when staticRoot is configured", async () => {
+    const staticRoot = mkdtempSync(join(tmpdir(), "potty-static-"));
+    writeFileSync(join(staticRoot, "index.html"), "<html>Potty</html>");
+
+    const db = createDatabase(":memory:");
+    const app = createApp({ db, apiKey: API_KEY, staticRoot });
+
+    const response = await app.request("/");
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("Potty");
   });
 });

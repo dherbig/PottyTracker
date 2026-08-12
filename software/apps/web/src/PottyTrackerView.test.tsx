@@ -14,10 +14,12 @@ const mockState = {
 
 function createMockClient(overrides: Partial<ApiClient> = {}): ApiClient {
   return {
+    health: vi.fn().mockResolvedValue({ status: "ok" }),
     listDogs: vi.fn().mockResolvedValue([
       { id: "dog-1", name: "Default", createdAt: "2026-08-12T12:00:00Z" },
     ]),
     getState: vi.fn().mockResolvedValue(mockState),
+    listEvents: vi.fn().mockResolvedValue([]),
     logEvent: vi.fn().mockResolvedValue({
       ...mockState,
       lastOutAt: "2026-08-12T12:00:00Z",
@@ -138,5 +140,60 @@ describe("PottyTrackerView", () => {
       <PottyTrackerView client={client} nowIso="2026-08-12T13:00:00Z" />,
     );
     expect(await screen.findByText(/included poop/i)).toBeInTheDocument();
+  });
+
+  it("rolls back optimistic state when the request fails", async () => {
+    const client = createMockClient({
+      getState: vi.fn().mockResolvedValue({
+        dogId: "dog-1",
+        lastOutAt: "2026-08-12T10:00:00Z",
+        lastPoopAt: null,
+        isCleared: false,
+        lastEvent: {
+          id: "e0",
+          dogId: "dog-1",
+          type: "potty",
+          timestamp: "2026-08-12T10:00:00Z",
+          insertedAt: "2026-08-12T10:00:00Z",
+          hadPoop: false,
+        },
+      }),
+      logEvent: vi.fn().mockRejectedValue(new Error("network down")),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <PottyTrackerView client={client} nowIso="2026-08-12T12:00:00Z" />,
+    );
+
+    expect(await screen.findByText(/2h ago/i)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^out$/i }));
+
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument();
+    expect(screen.getByText(/2h ago/i)).toBeInTheDocument();
+  });
+
+  it("shows collapsible history when events exist", async () => {
+    const client = createMockClient({
+      listEvents: vi.fn().mockResolvedValue([
+        {
+          id: "e1",
+          dogId: "dog-1",
+          type: "potty",
+          timestamp: "2026-08-12T10:00:00Z",
+          insertedAt: "2026-08-12T10:00:00Z",
+          hadPoop: true,
+        },
+      ]),
+    });
+    const user = userEvent.setup();
+
+    render(
+      <PottyTrackerView client={client} nowIso="2026-08-12T12:00:00Z" />,
+    );
+
+    const summary = await screen.findByText(/history \(1\)/i);
+    await user.click(summary);
+    expect(await screen.findByText("Out + poop")).toBeInTheDocument();
   });
 });

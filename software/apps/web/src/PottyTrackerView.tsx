@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  applyOptimisticState,
   formatLocalTime,
   formatRelative,
   plainDateTimeLocalToIso,
   type ApiClient,
   type Dog,
+  type OptimisticAction,
   type PottyState,
+  type TrackerEvent,
 } from "@potty/shared";
+import { EventHistory } from "./EventHistory.js";
 
 interface PottyTrackerViewProps {
   client: ApiClient;
@@ -30,6 +34,7 @@ export function PottyTrackerView({
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [selectedDogId, setSelectedDogId] = useState<string>("");
   const [state, setState] = useState<PottyState | null>(null);
+  const [history, setHistory] = useState<TrackerEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [backdateValue, setBackdateValue] = useState(() =>
@@ -46,6 +51,21 @@ export function PottyTrackerView({
     [client],
   );
 
+  const loadHistory = useCallback(
+    async (dogId: string) => {
+      const events = await client.listEvents(dogId, 20);
+      setHistory(events);
+    },
+    [client],
+  );
+
+  const refreshDog = useCallback(
+    async (dogId: string) => {
+      await Promise.all([loadState(dogId), loadHistory(dogId)]);
+    },
+    [loadHistory, loadState],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -57,7 +77,7 @@ export function PottyTrackerView({
         const dogId = nextDogs[0]?.id ?? "";
         setSelectedDogId(dogId);
         if (dogId) {
-          await loadState(dogId);
+          await refreshDog(dogId);
         }
       } catch (bootstrapError) {
         if (!cancelled) {
@@ -74,7 +94,7 @@ export function PottyTrackerView({
     return () => {
       cancelled = true;
     };
-  }, [client, loadState]);
+  }, [client, refreshDog]);
 
   const showDogSelector = dogs.length > 1;
 
@@ -91,13 +111,29 @@ export function PottyTrackerView({
     };
   }, [referenceNow, state, timeZone]);
 
-  async function runAction(action: () => Promise<PottyState>) {
+  async function runAction(
+    action: () => Promise<PottyState>,
+    optimisticAction?: OptimisticAction,
+  ) {
+    const previousState = state;
+    const previousHistory = history;
+
+    if (optimisticAction && selectedDogId) {
+      setState(applyOptimisticState(state, selectedDogId, optimisticAction));
+    }
+
     setLoading(true);
     setError(null);
+
     try {
       const nextState = await action();
       setState(nextState);
+      if (selectedDogId) {
+        await loadHistory(selectedDogId);
+      }
     } catch (actionError) {
+      setState(previousState);
+      setHistory(previousHistory);
       setError(
         actionError instanceof Error ? actionError.message : "Request failed",
       );
@@ -108,13 +144,18 @@ export function PottyTrackerView({
 
   async function handleLog(hadPoop: boolean, timestamp?: string) {
     if (!selectedDogId) return;
-    await runAction(() => client.logEvent(selectedDogId, { hadPoop, timestamp }));
+
+    const eventTimestamp = timestamp ?? referenceNow;
+    await runAction(
+      () => client.logEvent(selectedDogId, { hadPoop, timestamp }),
+      { type: "log", hadPoop, timestamp: eventTimestamp },
+    );
   }
 
   async function handleClear() {
     if (!selectedDogId) return;
     if (!window.confirm("Clear the last potty time?")) return;
-    await runAction(() => client.clear(selectedDogId));
+    await runAction(() => client.clear(selectedDogId), { type: "clear" });
   }
 
   function parseBackdateTimestamp(): string {
@@ -139,7 +180,7 @@ export function PottyTrackerView({
           onChange={(event) => {
             const dogId = event.target.value;
             setSelectedDogId(dogId);
-            void loadState(dogId);
+            void refreshDog(dogId);
           }}
         >
           {dogs.map((dog) => (
@@ -223,6 +264,8 @@ export function PottyTrackerView({
           </button>
         </div>
       </section>
+
+      <EventHistory events={history} timeZone={timeZone} />
 
       {error && <p className="error">{error}</p>}
     </main>

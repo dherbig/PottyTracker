@@ -106,6 +106,21 @@ export function listEventsForDog(
   return rows.map(mapEventRow);
 }
 
+export function listRecentEventsForDog(
+  db: PottyDatabase,
+  dogId: string,
+  limit: number,
+): TrackerEvent[] {
+  const rows = db
+    .prepare(
+      `SELECT id, dog_id, type, timestamp, inserted_at, had_poop
+       FROM events WHERE dog_id = ? ORDER BY timestamp DESC, inserted_at DESC LIMIT ?`,
+    )
+    .all(dogId, limit) as EventRow[];
+
+  return rows.map(mapEventRow);
+}
+
 export function insertPottyEvent(
   db: PottyDatabase,
   dogId: string,

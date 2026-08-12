@@ -1,4 +1,8 @@
-import type { Dog, PottyState } from "./types.js";
+import type { Dog, PottyState, TrackerEvent } from "./types.js";
+
+export interface HealthResponse {
+  status: "ok";
+}
 
 export interface ApiClientOptions {
   baseUrl: string;
@@ -35,11 +39,17 @@ export function createApiClient({
   }
 
   return {
+    health(): Promise<HealthResponse> {
+      return request("/api/health");
+    },
     listDogs(): Promise<Dog[]> {
       return request("/api/dogs");
     },
     getState(dogId: string): Promise<PottyState> {
       return request(`/api/dogs/${dogId}/state`);
+    },
+    listEvents(dogId: string, limit = 20): Promise<TrackerEvent[]> {
+      return request(`/api/dogs/${dogId}/events?limit=${limit}`);
     },
     logEvent(dogId: string, input: CreateEventInput): Promise<PottyState> {
       return request(`/api/dogs/${dogId}/events`, {
