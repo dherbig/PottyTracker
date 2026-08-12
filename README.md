@@ -32,7 +32,7 @@ pio run
 2. Add the remote:
 
 ```bash
-git remote add origin git@github.com:YOUR_USER/PottyTracker.git
+git remote add origin git@github.com:dherbig/PottyTracker.git
 ```
 
 3. Push when ready (after review):
