@@ -1,2 +1,11 @@
-// Phase 1: React PWA entry point
-console.log("Potty Tracker Web — implement in Phase 1");
+import "temporal-polyfill/global";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App.js";
+import "./styles.css";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);

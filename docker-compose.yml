@@ -1,0 +1,15 @@
+services:
+  potty-tracker:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      API_KEY: ${API_KEY:-dev-api-key}
+      DB_PATH: /data/potty.db
+      STATIC_ROOT: /app/web-dist
+    volumes:
+      - potty-data:/data
+    restart: unless-stopped
+
+volumes:
+  potty-data:

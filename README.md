@@ -2,10 +2,12 @@
 
 Track when your dog was last taken out for a potty break. One git repo, **two independent codebases**:
 
-| Codebase | Path | Stack |
-|----------|------|-------|
-| **Software** | [`software/`](software/) | React PWA + Hono API (pnpm / TypeScript) |
-| **Firmware** | [`firmware/`](firmware/) | ESP32 motor clock (PlatformIO / C++) |
+
+| Codebase     | Path                     | Stack                                    |
+| ------------ | ------------------------ | ---------------------------------------- |
+| **Software** | `[software/](software/)` | React PWA + Hono API (pnpm / TypeScript) |
+| **Firmware** | `[firmware/](firmware/)` | ESP32 motor clock (PlatformIO / C++)     |
+
 
 They integrate only through the **REST API** — no shared source code.
 
@@ -14,8 +16,15 @@ They integrate only through the **REST API** — no shared source code.
 ```bash
 pnpm install
 pnpm test
-pnpm dev
+
+# Terminal 1 — API on :3000
+pnpm --filter @potty/api dev
+
+# Terminal 2 — PWA on :5173 (proxies /api)
+pnpm --filter @potty/web dev
 ```
+
+Docker (self-hosted): see [docs/knowledge/deployment.md](docs/knowledge/deployment.md).
 
 ## Quick start (firmware)
 
@@ -26,27 +35,14 @@ cd firmware/esp32-clock
 pio run
 ```
 
-## GitHub setup
-
-1. Create a repository on GitHub
-2. Add the remote:
-
-```bash
-git remote add origin git@github.com:dherbig/PottyTracker.git
-```
-
-3. Push when ready (after review):
-
-```bash
-git push -u origin main
-```
-
 ## Documentation
 
 - [PLAN.md](PLAN.md) — development plan
 - [AGENTS.md](AGENTS.md) — agent/workflow guide
 - [docs/knowledge/](docs/knowledge/) — knowledge base
 - [firmware/README.md](firmware/README.md) — firmware overview
+
+
 
 ## License
 
