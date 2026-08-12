@@ -188,31 +188,29 @@ ESP32 firmware does **not** use Temporal — it receives/sends ISO strings and l
 | Testing | **Vitest** + Testing Library + coverage (v8) | Fast, Vite-native; works across monorepo packages |
 | CI | GitHub Actions (or local pre-commit) | `test`, `test:coverage`, lint on every change |
 
-**Monorepo layout:**
+**Repository layout (two codebases, one git repo):**
 
 ```
 PottyTracker/
-├── .cursor/
-│   └── rules/              # Agent control files (project commands & conventions)
-├── docs/
-│   └── knowledge/          # Knowledge base (architecture notes, decisions, hardware)
-├── apps/
-│   ├── web/                # React PWA (+ *.test.tsx)
-│   └── api/                # Hono server (+ *.test.ts)
-├── packages/
-│   └── shared/             # Types, API client, Temporal utils (+ *.test.ts)
-├── firmware/
-│   └── esp32-clock/        # Phase 3 — motor-driven physical clock
-├── AGENTS.md               # Entry point: how agents should work in this repo
-├── docker-compose.yml
-├── vitest.workspace.ts     # Shared test runner config
-└── package.json            # pnpm workspaces
+├── .cursor/rules/          # Agent control files
+├── docs/knowledge/         # Knowledge base (both codebases)
+├── software/               # TypeScript monorepo (pnpm) — PWA + API
+│   ├── apps/web/
+│   ├── apps/api/
+│   └── packages/shared/
+├── firmware/               # Embedded codebases (NOT in pnpm)
+│   └── esp32-clock/        # PlatformIO — motor clock + buttons
+├── AGENTS.md
+├── docker-compose.yml      # Phase 1
+├── vitest.workspace.ts     # Software tests only
+├── pnpm-workspace.yaml
+└── package.json            # pnpm root (software packages)
 ```
 
 **Self-hosted deployment:**
 
 - Docker Compose runs API container; SQLite volume mounted for persistence
-- API serves built PWA from `apps/web/dist` (single origin, no CORS hassle)
+- API serves built PWA from `software/apps/web/dist` (single origin, no CORS hassle)
 - Accessible on home network (e.g. `http://potty.local` via mDNS or static IP)
 - ESP32 points at same host URL + API key
 
@@ -230,16 +228,16 @@ PottyTracker/
 4. **Refactor** — clean up while keeping tests green
 5. **Coverage** — confirm thresholds met before marking feature done
 
-This applies to `packages/shared`, `apps/api`, and `apps/web`. Firmware (Phase 3) uses PlatformIO/native tests where applicable.
+This applies to `software/packages/shared`, `software/apps/api`, and `software/apps/web`. Firmware uses PlatformIO/native tests where applicable.
 
 ### Test stack
 
 | Package | Tooling |
 |---------|---------|
 | All TS packages | **Vitest** (workspace via `vitest.workspace.ts`) |
-| `packages/shared` | Vitest unit tests for state logic, Temporal utils, API client |
-| `apps/api` | Vitest + in-memory/fixed SQLite for route + DB tests |
-| `apps/web` | Vitest + **@testing-library/react** + **user-event** for components/hooks |
+| `software/packages/shared` | Vitest unit tests for state logic, Temporal utils, API client |
+| `software/apps/api` | Vitest + in-memory/fixed SQLite for route + DB tests |
+| `software/apps/web` | Vitest + **@testing-library/react** + **user-event** for components/hooks |
 
 ### Coverage requirements
 
@@ -247,9 +245,9 @@ Enforced in root Vitest config via `@vitest/coverage-v8`:
 
 | Scope | Minimum line coverage |
 |-------|----------------------|
-| `packages/shared` | **90%** (pure logic — highest bar) |
-| `apps/api` | **85%** |
-| `apps/web` | **80%** (UI — exclude PWA boilerplate/service worker from thresholds) |
+| `software/packages/shared` | **90%** (pure logic — highest bar) |
+| `software/apps/api` | **85%** |
+| `software/apps/web` | **80%** (UI — exclude PWA boilerplate/service worker from thresholds) |
 | **Project overall** | **85%** |
 
 Commands (root):
@@ -288,8 +286,9 @@ Cursor rules (`.mdc` files) enforce how agents work in this repo. Created during
 |------|-------|---------|
 | `tdd-workflow.mdc` | `alwaysApply: true` | Red-green-refactor; tests before implementation; coverage gates |
 | `project-conventions.mdc` | `alwaysApply: true` | Monorepo layout, Temporal-only dates, multi-dog scoping, no `Date` |
-| `api-conventions.mdc` | `apps/api/**` | Hono patterns, dog-scoped routes, ISO timestamp wire format |
-| `react-patterns.mdc` | `apps/web/**` | Component structure, Testing Library usage, PWA constraints |
+| `api-conventions.mdc` | `software/apps/api/**` | Hono patterns, dog-scoped routes, ISO timestamp wire format |
+| `react-patterns.mdc` | `software/apps/web/**` | Component structure, Testing Library usage, PWA constraints |
+| `firmware-conventions.mdc` | `firmware/**` | PlatformIO, HTTP API contract, no shared TS |
 | `git-policy.mdc` | `alwaysApply: true` | Ask before every commit and push; never push without explicit user approval |
 
 **[`AGENTS.md`](AGENTS.md)** (repo root) — single entry point linking rules, knowledge base, TDD workflow, and key commands (`pnpm dev`, `pnpm test`, etc.). Update when conventions change.

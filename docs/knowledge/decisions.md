@@ -35,3 +35,9 @@
 **Decision:** Clear inserts a `clear` event; state nulls when clear is most recent by insertion order.
 
 **Reason:** Preserves audit trail; syncs to ESP32 like other actions.
+
+## ADR-007: Separate software and firmware codebases
+
+**Decision:** `software/` (pnpm/TypeScript) and `firmware/` (PlatformIO/C++) are independent trees in one git repo.
+
+**Reason:** Different toolchains, languages, and deploy paths; integration only via REST API.

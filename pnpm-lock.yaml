@@ -18,7 +18,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jsdom@26.1.0)(tsx@4.23.12)
 
-  apps/api:
+  software/apps/api:
     dependencies:
       '@potty/shared':
         specifier: workspace:*
@@ -49,7 +49,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jsdom@26.1.0)(tsx@4.23.12)
 
-  apps/web:
+  software/apps/web:
     dependencies:
       '@potty/shared':
         specifier: workspace:*
@@ -95,7 +95,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.7(@types/node@22.20.1)(jsdom@26.1.0)(tsx@4.23.12)
 
-  packages/shared:
+  software/packages/shared:
     dependencies:
       temporal-polyfill:
         specifier: ^0.3.0

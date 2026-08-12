@@ -2,6 +2,7 @@
   "name": "potty-tracker",
   "private": true,
   "type": "module",
+  "description": "Potty Tracker — software (PWA + API) and firmware (ESP32) in one repo",
   "scripts": {
     "dev": "pnpm --parallel --filter @potty/api --filter @potty/web dev",
     "build": "pnpm -r build",

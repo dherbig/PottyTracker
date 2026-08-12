@@ -1,6 +1,6 @@
 ---
 description: React PWA patterns and testing
-globs: apps/web/**
+globs: software/apps/web/**
 alwaysApply: false
 ---
 

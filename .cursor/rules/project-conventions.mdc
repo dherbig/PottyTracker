@@ -5,8 +5,10 @@ alwaysApply: true
 
 # Project Conventions
 
-- Monorepo: `apps/web`, `apps/api`, `packages/shared`
-- Use Temporal API for all date/time logic — never `Date` for business logic
+- **Two codebases:** `software/` (TypeScript/pnpm) and `firmware/` (C++/PlatformIO) — no shared source
+- Software monorepo: `software/apps/web`, `software/apps/api`, `software/packages/shared`
+- Integration boundary: REST API + ISO 8601 timestamps (see `docs/knowledge/`)
+- Use Temporal API for all date/time logic in software — never `Date` for business logic
 - Store timestamps as UTC ISO 8601 strings in DB and API
 - All events scoped by `dogId`
 - Poop implies taken out: Out = hadPoop false, Poop = hadPoop true

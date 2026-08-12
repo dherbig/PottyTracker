@@ -1,0 +1,14 @@
+---
+description: ESP32 firmware conventions (PlatformIO)
+globs: firmware/**
+alwaysApply: false
+---
+
+# Firmware Conventions
+
+- Independent from `software/` — C++ / PlatformIO, not pnpm
+- HTTP only: `GET /api/dogs/:dogId/state`, `POST .../events`, `POST .../clear`
+- Send `X-API-Key` header; omit `timestamp` on button POSTs (server assigns now)
+- Parse `lastOutAt` as ISO 8601 string; no Temporal or shared TS types
+- Config in `include/config.h` (gitignored); template in `config.example.h`
+- Build with `pio run` from `firmware/esp32-clock/`

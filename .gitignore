@@ -10,4 +10,10 @@ data/
 *.db
 *.db-journal
 .vite/
-coverage/
+
+# PlatformIO (firmware/)
+.pio/
+firmware/**/include/config.h
+
+# Software build outputs
+software/**/dist/

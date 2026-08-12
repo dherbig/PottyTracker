@@ -1,6 +1,6 @@
 ---
 description: Hono API conventions
-globs: apps/api/**
+globs: software/apps/api/**
 alwaysApply: false
 ---
 
