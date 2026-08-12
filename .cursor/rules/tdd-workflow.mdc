@@ -1,0 +1,13 @@
+---
+description: TDD workflow — tests before implementation, coverage gates
+alwaysApply: true
+---
+
+# TDD Workflow
+
+1. Write failing tests first (Red)
+2. Implement minimum code to pass (Green)
+3. Refactor while keeping tests green
+4. Run `pnpm test:coverage` before marking work complete
+
+Coverage minimums: shared 90%, api 85%, web 80%, overall 85%.

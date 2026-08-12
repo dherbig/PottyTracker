@@ -1,0 +1,12 @@
+---
+description: Hono API conventions
+globs: apps/api/**
+alwaysApply: false
+---
+
+# API Conventions
+
+- Dog-scoped routes: `/api/dogs/:dogId/...`
+- Validate timestamps with Temporal; reject future instants (~1 min skew OK)
+- Auth via `X-API-Key` header
+- Return updated `PottyState` from POST endpoints

@@ -1,0 +1,12 @@
+---
+description: Potty Tracker monorepo conventions
+alwaysApply: true
+---
+
+# Project Conventions
+
+- Monorepo: `apps/web`, `apps/api`, `packages/shared`
+- Use Temporal API for all date/time logic — never `Date` for business logic
+- Store timestamps as UTC ISO 8601 strings in DB and API
+- All events scoped by `dogId`
+- Poop implies taken out: Out = hadPoop false, Poop = hadPoop true

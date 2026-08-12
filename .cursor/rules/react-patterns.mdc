@@ -1,0 +1,12 @@
+---
+description: React PWA patterns and testing
+globs: apps/web/**
+alwaysApply: false
+---
+
+# React Patterns
+
+- Functional components; test with Testing Library + user-event
+- Large tap targets (min 48px) for Out/Poop buttons
+- Clear button requires confirmation dialog
+- Backdate logging in separate section from quick-log buttons

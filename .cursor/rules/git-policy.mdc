@@ -1,0 +1,12 @@
+---
+description: Git commit and push policy — ask user every time
+alwaysApply: true
+---
+
+# Git Policy
+
+- **NEVER** `git commit` without asking the user first — every time
+- **NEVER** `git push` without explicit user approval — every time, no exceptions
+- **NEVER** force push unless explicitly requested
+- OK to prepare files, configure remotes, and add GitHub Actions locally
+- After completing work: summarize changes, ask about commit, then separately ask about push
